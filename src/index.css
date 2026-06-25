@@ -1,3 +1,8 @@
+@keyframes redFill {
+  from { clip-path: circle(0% at 50% 50%); }
+  to   { clip-path: circle(150% at 50% 50%); }
+}
+
 @font-face {
   font-family: 'PunkDots';
   src: url('/Punk Dots.ttf') format('truetype');
@@ -84,7 +89,7 @@
   -webkit-font-smoothing: antialiased;
 }
 
-* { box-sizing: border-box; }
+* { box-sizing: border-box; cursor: none !important; caret-color: transparent; }
 
 body {
   margin: 0;

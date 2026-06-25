@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import './App.css'
+import KoiFishCursor from './KoiFishCursor'
 
 const BUTTON_COUNT = 14
 const GRID = 10
@@ -41,6 +42,7 @@ function LoserScreen({ onRedeem }) {
   const [minutes, setMinutes] = useState(0)
   const [secondsLeft, setSecondsLeft] = useState(null)
   const [running, setRunning] = useState(false)
+  const [transPhase, setTransPhase] = useState(null)
   const intervalRef = useRef(null)
 
   useEffect(() => {
@@ -71,6 +73,17 @@ function LoserScreen({ onRedeem }) {
     if (total <= 0) return
     setSecondsLeft(total)
     setRunning(true)
+  }
+
+  function handleRedemptionClick() {
+    const total = hours * 3600 + minutes * 60
+    if (total <= 0) return
+    setTransPhase('white')
+    setTimeout(() => setTransPhase('red'), 80)
+    setTimeout(() => {
+      startTimer()
+      setTransPhase(null)
+    }, 1000)
   }
 
   function resetTimer() {
@@ -132,9 +145,22 @@ function LoserScreen({ onRedeem }) {
           )}
         </div>
         {!running && secondsLeft === null && showStart && (
-          <button className="countdown-start" onClick={startTimer}>your journey to redemption begins now...</button>
+          <button className="countdown-start" onClick={handleRedemptionClick}>your journey to redemption begins now...</button>
         )}
       </>)}
+
+      {transPhase && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 999998, pointerEvents: 'none' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'white' }} />
+          {transPhase === 'red' && (
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: '#761214',
+              animation: 'redFill 0.85s ease-out forwards',
+            }} />
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -356,17 +382,9 @@ function BurstCanvas({ triggerKey, origin }) {
 let _uid = 100
 const uid = () => String(_uid++)
 
-const DEFAULT_FOLDERS = [
-  { id: 'default', name: 'general', enabled: true, collapsed: false },
-]
+const DEFAULT_FOLDERS = []
 
-const DEFAULT_TASKS = [
-  'portfolio', 'portfolio website', 'fix clothes', 'depop', 'embroidery',
-  'crochet', 'thrift', 'button belt', 'knot key chain', 'beaded bracelet',
-  'embroidery/bead a bag', 'crochet/ribbon headphone protection',
-  'reorganise room', 'reorganise toilet', 'deep clean room', 'deep clean toilet',
-  'continue photo journal', 'baking',
-].map((name, i) => ({ id: String(i), name, folderId: 'default', enabled: true }))
+const DEFAULT_TASKS = []
 
 function App() {
   const [folders, setFolders] = useState(DEFAULT_FOLDERS)
@@ -542,6 +560,7 @@ function App() {
 
   return (
     <div className="app">
+      <KoiFishCursor />
       {loser && <LoserScreen onRedeem={() => { setLoser(false); setShowMinesweeper(false); setTaskClicked(false) }} />}
       <BurstCanvas triggerKey={burstKey} origin={burstOrigin} />
 
