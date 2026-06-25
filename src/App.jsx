@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import './App.css'
 import KoiFishCursor from './KoiFishCursor'
+import confetti from 'canvas-confetti'
 
 const BUTTON_COUNT = 14
 const GRID = 10
@@ -34,7 +35,7 @@ function makeBoard() {
 
 const NUM_COLORS = ['', '#1A2023', '#1A2023', '#1A2023', '#1A2023', '#1A2023', '#1A2023', '#1A2023', '#1A2023']
 
-function LoserScreen({ onRedeem }) {
+function LoserScreen({ onRedeem, onReset }) {
   const [showRedeem, setShowRedeem] = useState(false)
   const [showTimer, setShowTimer] = useState(false)
   const [showStart, setShowStart] = useState(false)
@@ -68,6 +69,13 @@ function LoserScreen({ onRedeem }) {
     return () => clearInterval(intervalRef.current)
   }, [running])
 
+  useEffect(() => {
+    if (secondsLeft === 0) {
+      confetti({ particleCount: 200, spread: 120, origin: { y: 0.6 } })
+      setTimeout(() => onReset(), 1200)
+    }
+  }, [secondsLeft])
+
   function startTimer() {
     const total = hours * 3600 + minutes * 60
     if (total <= 0) return
@@ -76,13 +84,10 @@ function LoserScreen({ onRedeem }) {
   }
 
   function handleRedemptionClick() {
-    const total = hours * 3600 + minutes * 60
-    if (total <= 0) return
-    setTransPhase('white')
-    setTimeout(() => setTransPhase('red'), 80)
+    setTransPhase('light')
     setTimeout(() => {
+      setTransPhase('red')
       startTimer()
-      setTransPhase(null)
     }, 1000)
   }
 
@@ -140,7 +145,6 @@ function LoserScreen({ onRedeem }) {
                 {String(displayH).padStart(2, '0')}:{String(displayM).padStart(2, '0')}:{String(displayS).padStart(2, '0')}
               </span>
               {secondsLeft === 0 && <p className="countdown-done">time's up!</p>}
-              <button className="countdown-reset" onClick={resetTimer}>reset</button>
             </div>
           )}
         </div>
@@ -151,14 +155,46 @@ function LoserScreen({ onRedeem }) {
 
       {transPhase && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 999998, pointerEvents: 'none' }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'white' }} />
-          {transPhase === 'red' && (
+          <div style={{ position: 'absolute', inset: 0, background: '#D6DAD2' }} />
+          {transPhase === 'red' && (<>
             <div style={{
               position: 'absolute', inset: 0,
               background: '#761214',
               animation: 'redFill 0.85s ease-out forwards',
             }} />
-          )}
+            {secondsLeft != null && (
+              <div style={{
+                position: 'absolute', inset: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#1A2023',
+                fontSize: 'min(20vw, 20vh)',
+                fontFamily: "'StarryType', sans-serif",
+                letterSpacing: '2px',
+                userSelect: 'none',
+              }}>
+                {String(Math.floor(secondsLeft / 3600)).padStart(2, '0')}:{String(Math.floor((secondsLeft % 3600) / 60)).padStart(2, '0')}:{String(secondsLeft % 60).padStart(2, '0')}
+              </div>
+            )}
+            <button
+              style={{
+                position: 'absolute', bottom: 24, left: 24,
+                fontFamily: "'StarryType', sans-serif",
+                fontSize: '1rem',
+                color: '#D6DAD2',
+                background: 'none',
+                border: 'none',
+                letterSpacing: '2px',
+                animation: 'blink 1.2s step-start infinite',
+                opacity: 0.8,
+                padding: '4px 18px',
+                pointerEvents: 'auto',
+              }}
+              onClick={() => {
+                confetti({ particleCount: 200, spread: 120, origin: { y: 0.6 } })
+                setTimeout(() => onRedeem(), 1200)
+              }}
+            >are you feeling auralicious?</button>
+          </>)}
         </div>
       )}
     </div>
@@ -406,6 +442,7 @@ function App() {
   const [taskClicked, setTaskClicked] = useState(false)
   const [showMinesweeper, setShowMinesweeper] = useState(false)
   const [loser, setLoser] = useState(false)
+  const [loserKey, setLoserKey] = useState(0)
   const [dragTaskId, setDragTaskId] = useState(null)
   const [dragOverFolderId, setDragOverFolderId] = useState(null)
   const [selectedTaskIds, setSelectedTaskIds] = useState(new Set())
@@ -561,7 +598,7 @@ function App() {
   return (
     <div className="app">
       <KoiFishCursor />
-      {loser && <LoserScreen onRedeem={() => { setLoser(false); setShowMinesweeper(false); setTaskClicked(false) }} />}
+      {loser && <LoserScreen key={loserKey} onRedeem={() => { setLoser(false); setShowMinesweeper(false); setTaskClicked(false) }} onReset={() => setLoserKey(k => k + 1)} />}
       <BurstCanvas triggerKey={burstKey} origin={burstOrigin} />
 
       <h1>task roulette</h1>

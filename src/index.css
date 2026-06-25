@@ -1,3 +1,8 @@
+@font-face {
+  font-family: 'LaEstropeada';
+  src: url('/La Estropeada.ttf') format('truetype');
+}
+
 @keyframes redFill {
   from { clip-path: circle(0% at 50% 50%); }
   to   { clip-path: circle(150% at 50% 50%); }
@@ -90,6 +95,7 @@
 }
 
 * { box-sizing: border-box; cursor: none !important; caret-color: transparent; }
+input, textarea { caret-color: auto; }
 
 body {
   margin: 0;
@@ -721,7 +727,7 @@ h1, h2 {
 .countdown-start, .countdown-reset {
   font-family: 'StarryType', var(--sans);
   font-size: 1rem;
-  color: #761214;
+  color: #D6DAD2;
   background: none;
   border: none;
   position: fixed;
