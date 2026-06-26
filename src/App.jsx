@@ -470,7 +470,7 @@ function App() {
     setTaskClicked(false)
     setShowMinesweeper(false)
     setLoser(false)
-    setBtnIndex(i => (i % BUTTON_COUNT) + 1)
+    setBtnIndex(i => { let n; do { n = Math.floor(Math.random() * BUTTON_COUNT) + 1 } while (n === i); return n })
     if (btnRef.current) {
       const r = btnRef.current.getBoundingClientRect()
       setBurstOrigin({ x: r.left + r.width / 2, y: r.top + r.height / 2 })
@@ -597,7 +597,7 @@ function App() {
 
   return (
     <div className="app">
-      <KoiFishCursor />
+      <KoiFishCursor minesweeperOpen={showMinesweeper} />
       {loser && <LoserScreen key={loserKey} onRedeem={() => { setLoser(false); setShowMinesweeper(false); setTaskClicked(false) }} onReset={() => setLoserKey(k => k + 1)} />}
       <BurstCanvas triggerKey={burstKey} origin={burstOrigin} />
 

@@ -9,7 +9,30 @@ function shortestArc(from, to) {
   return d
 }
 
-export default function KoiFishCursor() {
+function pickWaypoint(pad = 100) {
+  // Try to find a point outside the minesweeper modal
+  const modal = document.querySelector('.ms-modal')
+  const rect  = modal ? modal.getBoundingClientRect() : null
+  for (let i = 0; i < 20; i++) {
+    const x = pad + Math.random() * (window.innerWidth  - pad * 2)
+    const y = pad + Math.random() * (window.innerHeight - pad * 2)
+    if (!rect) return { x, y }
+    const outside =
+      x < rect.left   - 60 || x > rect.right  + 60 ||
+      y < rect.top    - 60 || y > rect.bottom  + 60
+    if (outside) return { x, y }
+  }
+  // Fallback: pick a corner area
+  const corners = [
+    { x: pad, y: pad },
+    { x: window.innerWidth - pad, y: pad },
+    { x: pad, y: window.innerHeight - pad },
+    { x: window.innerWidth - pad, y: window.innerHeight - pad },
+  ]
+  return corners[Math.floor(Math.random() * corners.length)]
+}
+
+export default function KoiFishCursor({ minesweeperOpen }) {
   const [pos,       setPos]      = useState({ x: -300, y: -300 })
   const [mousePos,  setMousePos] = useState({ x: -300, y: -300 })
   const [rotation,  setRot]      = useState(0)
@@ -17,33 +40,58 @@ export default function KoiFishCursor() {
   const [hovering,  setHovering] = useState(false)
 
   const state = useRef({
-    // actual mouse
     mouseX: -300, mouseY: -300,
     px: -300, py: -300,
-    // fish display position (lerped)
     fishX: -300, fishY: -300,
-    // rotation
     currentRot: 0,
     targetRot: 0,
     speed: 0,
-    // hover drift
     hovering: false,
+    minesweeperOpen: false,
     driftX: 0, driftY: 0,
     raf: null,
   }).current
 
+  // Sync minesweeperOpen into the ref so the rAF loop can read it
+  useEffect(() => {
+    state.minesweeperOpen = minesweeperOpen
+    if (minesweeperOpen) {
+      state.hovering = true
+      setHovering(true)
+      const wp = pickWaypoint()
+      state.driftX = wp.x
+      state.driftY = wp.y
+    } else {
+      // Only release hover if no interactive element is under cursor
+      const el = document.elementFromPoint(state.mouseX, state.mouseY)
+      const still = el && !!el.closest('button, input, textarea, select, a, [role="button"]')
+      if (!still) {
+        state.hovering = false
+        setHovering(false)
+      }
+    }
+  }, [minesweeperOpen])
+
   useEffect(() => {
     const loop = () => {
       if (state.hovering) {
-        // drift fish slowly toward random target
-        state.fishX += (state.driftX - state.fishX) * 0.008
-        state.fishY += (state.driftY - state.fishY) * 0.008
-        // point fish toward drift direction
         const dx = state.driftX - state.fishX
         const dy = state.driftY - state.fishY
-        if (Math.hypot(dx, dy) > 5) {
+        const dist = Math.hypot(dx, dy)
+        // Pick new waypoint when close; avoid modal when minesweeper is open
+        if (dist < 60) {
+          const wp = pickWaypoint()
+          state.driftX = wp.x
+          state.driftY = wp.y
+        }
+        const speed = 1.8
+        if (dist > 0) {
+          state.fishX += (dx / dist) * speed
+          state.fishY += (dy / dist) * speed
+        }
+        if (dist > 5) {
           const angle = Math.atan2(dy, dx) * (180 / Math.PI)
-          state.targetRot += shortestArc(state.targetRot, angle - FISH_HEADING) * 0.08
+          state.targetRot += shortestArc(state.targetRot, angle - FISH_HEADING) * 0.06
         }
       } else {
         const dx = state.mouseX - state.fishX
@@ -53,11 +101,9 @@ export default function KoiFishCursor() {
           state.fishX = state.mouseX
           state.fishY = state.mouseY
         } else {
-          // return to mouse — faster the farther away it is
           const t = Math.min(0.18, 0.04 + dist * 0.002)
           state.fishX += dx * t
           state.fishY += dy * t
-          // point fish toward mouse while returning
           if (dist > 25) {
             const angle = Math.atan2(dy, dx) * (180 / Math.PI)
             state.targetRot += shortestArc(state.targetRot, angle - FISH_HEADING) * 0.1
@@ -99,6 +145,8 @@ export default function KoiFishCursor() {
     }
 
     const onHover = e => {
+      // minesweeper mode overrides hover detection
+      if (state.minesweeperOpen) return
       const isInteractive = !!e.target.closest('button, input, textarea, select, a, [role="button"]')
       if (isInteractive === state.hovering) return
       state.hovering = isInteractive
@@ -155,7 +203,7 @@ export default function KoiFishCursor() {
         </defs>
       </svg>
 
-      {/* Blue circle cursor shown over interactive elements */}
+      {/* Blue circle cursor shown over interactive elements or during minesweeper */}
       {hovering && (
         <div style={{
           position: 'fixed',
