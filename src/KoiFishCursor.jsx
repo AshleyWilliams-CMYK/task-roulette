@@ -32,12 +32,13 @@ function pickWaypoint(pad = 100) {
   return corners[Math.floor(Math.random() * corners.length)]
 }
 
-export default function KoiFishCursor({ minesweeperOpen }) {
-  const [pos,       setPos]      = useState({ x: -300, y: -300 })
-  const [mousePos,  setMousePos] = useState({ x: -300, y: -300 })
-  const [rotation,  setRot]      = useState(0)
-  const [wobbleDur, setWobble]   = useState(2)
-  const [hovering,  setHovering] = useState(false)
+export default function KoiFishCursor({ minesweeperOpen, tasksTabOpen, settingsOpen }) {
+  const [pos,        setPos]       = useState({ x: -300, y: -300 })
+  const [mousePos,   setMousePos]  = useState({ x: -300, y: -300 })
+  const [rotation,   setRot]       = useState(0)
+  const [wobbleDur,  setWobble]    = useState(2)
+  const [hovering,   setHovering]  = useState(false)
+  const [cursorType, setCursorType] = useState('dot') // 'dot' | 'text'
 
   const state = useRef({
     mouseX: -300, mouseY: -300,
@@ -48,21 +49,26 @@ export default function KoiFishCursor({ minesweeperOpen }) {
     speed: 0,
     hovering: false,
     minesweeperOpen: false,
+    tasksTabOpen: false,
+    settingsOpen: false,
     driftX: 0, driftY: 0,
     raf: null,
   }).current
 
-  // Sync minesweeperOpen into the ref so the rAF loop can read it
+  const forceSwim = minesweeperOpen || tasksTabOpen || settingsOpen
+
   useEffect(() => {
     state.minesweeperOpen = minesweeperOpen
-    if (minesweeperOpen) {
+    state.tasksTabOpen = tasksTabOpen
+    state.settingsOpen = settingsOpen
+    if (forceSwim) {
       state.hovering = true
       setHovering(true)
+      setCursorType('dot')
       const wp = pickWaypoint()
       state.driftX = wp.x
       state.driftY = wp.y
     } else {
-      // Only release hover if no interactive element is under cursor
       const el = document.elementFromPoint(state.mouseX, state.mouseY)
       const still = el && !!el.closest('button, input, textarea, select, a, [role="button"]')
       if (!still) {
@@ -70,7 +76,7 @@ export default function KoiFishCursor({ minesweeperOpen }) {
         setHovering(false)
       }
     }
-  }, [minesweeperOpen])
+  }, [minesweeperOpen, tasksTabOpen, settingsOpen])
 
   useEffect(() => {
     const loop = () => {
@@ -146,11 +152,13 @@ export default function KoiFishCursor({ minesweeperOpen }) {
 
     const onHover = e => {
       // minesweeper mode overrides hover detection
-      if (state.minesweeperOpen) return
-      const isInteractive = !!e.target.closest('button, input, textarea, select, a, [role="button"]')
+      if (state.minesweeperOpen || state.tasksTabOpen || state.settingsOpen) return
+      const isText = !!e.target.closest('input, textarea')
+      const isInteractive = isText || !!e.target.closest('button, select, a, [role="button"]')
       if (isInteractive === state.hovering) return
       state.hovering = isInteractive
       setHovering(isInteractive)
+      setCursorType(isText ? 'text' : 'dot')
       if (isInteractive) {
         const angle = Math.random() * Math.PI * 2
         const dist  = 180 + Math.random() * 150
@@ -203,20 +211,36 @@ export default function KoiFishCursor({ minesweeperOpen }) {
         </defs>
       </svg>
 
-      {/* Blue circle cursor shown over interactive elements or during minesweeper */}
-      {hovering && (
+      {/* Cursor shown over interactive elements or during minesweeper */}
+      {hovering && cursorType === 'dot' && (
+        <img
+          src="/blue flower.png"
+          alt=""
+          style={{
+            position: 'fixed',
+            left: mousePos.x - 12,
+            top:  mousePos.y - 12,
+            width: 24,
+            height: 24,
+            pointerEvents: 'none',
+            zIndex: 100000,
+          }}
+        />
+      )}
+      {hovering && cursorType === 'text' && (
         <div style={{
           position: 'fixed',
-          left: mousePos.x - 8,
-          top:  mousePos.y - 8,
-          width: 16,
-          height: 16,
-          borderRadius: '50%',
+          left: mousePos.x - 1,
+          top:  mousePos.y - 10,
+          width: 2,
+          height: 20,
           background: '#3A6280',
           pointerEvents: 'none',
           zIndex: 100000,
+          animation: 'kfishCaret 1s step-start infinite',
         }} />
       )}
+      <style>{`@keyframes kfishCaret { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }`}</style>
 
       {/* Fish cursor */}
       <div style={{

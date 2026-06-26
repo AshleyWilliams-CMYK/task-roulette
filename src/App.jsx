@@ -432,6 +432,10 @@ function App() {
   const [newFolderName, setNewFolderName] = useState('')
   const [spinning, setSpinning] = useState(false)
   const [tab, setTab] = useState('roulette')
+  const [showSettings, setShowSettings] = useState(false)
+  const [authTab, setAuthTab] = useState('login')
+  const [regPassword, setRegPassword] = useState('')
+  const [regConfirm, setRegConfirm] = useState('')
   const [btnIndex, setBtnIndex] = useState(1)
   const [burstKey, setBurstKey] = useState(0)
   const [burstOrigin, setBurstOrigin] = useState(null)
@@ -597,9 +601,59 @@ function App() {
 
   return (
     <div className="app">
-      <KoiFishCursor minesweeperOpen={showMinesweeper} />
+      <KoiFishCursor minesweeperOpen={showMinesweeper} tasksTabOpen={tab === 'tasks'} settingsOpen={showSettings} />
       {loser && <LoserScreen key={loserKey} onRedeem={() => { setLoser(false); setShowMinesweeper(false); setTaskClicked(false) }} onReset={() => setLoserKey(k => k + 1)} />}
       <BurstCanvas triggerKey={burstKey} origin={burstOrigin} />
+
+      <img
+        src="/settings.png"
+        alt="settings"
+        className="settings-icon"
+        onClick={() => setShowSettings(s => !s)}
+        style={{
+          position: 'fixed',
+          top: 16,
+          right: 16,
+          width: 32,
+          height: 32,
+          zIndex: 9999,
+          cursor: 'pointer',
+        }}
+      />
+
+      {showSettings && (
+        <div className="settings-overlay" onClick={e => { if (e.target === e.currentTarget) setShowSettings(false) }}>
+          <div className="settings-modal">
+            <button className="settings-close" onClick={() => setShowSettings(false)}>✕</button>
+            <div className="settings-auth-tabs">
+              <button className={authTab === 'login' ? 'auth-tab active' : 'auth-tab'} onClick={() => setAuthTab('login')}>log in</button>
+              <button className={authTab === 'register' ? 'auth-tab active' : 'auth-tab'} onClick={() => setAuthTab('register')}>register</button>
+            </div>
+            {authTab === 'login' ? (
+              <form className="auth-form" onSubmit={e => e.preventDefault()}>
+                <input type="text" placeholder="username" className="auth-input" />
+                <input type="password" placeholder="password" className="auth-input" />
+                <button type="submit" className="auth-submit">log in</button>
+              </form>
+            ) : (
+              <form className="auth-form" onSubmit={e => e.preventDefault()}>
+                <input type="text" placeholder="username" className="auth-input" />
+                <input type="email" placeholder="email" className="auth-input" />
+                <input type="password" placeholder="password" className="auth-input" onChange={e => setRegPassword(e.target.value)} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input type="password" placeholder="confirm password" className="auth-input" style={{ flex: 1 }} onChange={e => setRegConfirm(e.target.value)} />
+                  {regConfirm.length > 0 && (
+                    <span style={{ fontSize: '1.4rem', color: regPassword === regConfirm ? '#8C8F58' : '#761214', flexShrink: 0 }}>
+                      {regPassword === regConfirm ? '✓' : '✕'}
+                    </span>
+                  )}
+                </div>
+                <button type="submit" className="auth-submit">register</button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       <h1>task roulette</h1>
 
